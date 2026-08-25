@@ -1,0 +1,17 @@
+# Requirements for cpu_vs_real_gpu_demo.py (REAL GPU version)
+#
+# IMPORTANT: For NVIDIA GPU (CUDA) support, install PyTorch using the
+# command generated for your system at https://pytorch.org/get-started/locally/
+# The default `pip install torch` below installs a CPU-only build on many
+# systems - if you have an NVIDIA GPU, replace that line with the CUDA
+# command from the PyTorch site (it will look something like):
+#
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+#
+# Apple Silicon (M1/M2/M3) users: the default `pip install torch` from
+# PyPI already includes MPS (Metal) support - no extra step needed.
+
+torch>=2.1.0
+ultralytics>=8.1.0
+opencv-python>=4.8.0
+matplotlib>=3.7.0
