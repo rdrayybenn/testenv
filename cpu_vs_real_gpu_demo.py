@@ -272,16 +272,14 @@ def generate_chart(cpu_fps, gpu_fps, cpu_ms, gpu_ms, gpu_available, gpu_name):
         ax.text(b.get_x() + b.get_width() / 2, b.get_height(),
                  f"{b.get_height():.1f} ms", ha="center", va="bottom", fontweight="bold")
 
-    if avg_cpu_fps and avg_gpu_fps and gpu_available:
-        speedup = avg_gpu_fps / avg_cpu_fps
+    if gpu_available:
         fig.text(0.5, 0.02,
-                  f"Measured real GPU speedup vs CPU: ~{speedup:.1f}x faster "
-                  "(actual hardware measurement, not simulated)",
+                  "Measured real hardware performance on this machine.",
                   ha="center", fontsize=9, style="italic", color="#555555")
-    elif not gpu_available:
+    else:
         fig.text(0.5, 0.02,
                   "No compatible GPU was detected on this machine - "
-                  "GPU mode ran on CPU, so no speedup is shown.",
+                  "GPU mode ran on CPU.",
                   ha="center", fontsize=9, style="italic", color="#555555")
 
     plt.tight_layout(rect=[0, 0.05, 1, 0.93])
