@@ -3,6 +3,10 @@
 **Suggestion 1: Real-Time AI Inference + CPU vs GPU**
 *"What happens when we move an AI workload from general-purpose CPU computing to specialized GPU computing?"*
 
+The recommended UI is a browser dashboard (`python server.py`) built with
+TypeScript, React, and Tailwind. The original OpenCV window (`python cpu_vs_gpu_demo.py`)
+still works if you want the traditional Python demo.
+
 A live, presentation-ready demo built around this flow:
 
 ```
@@ -57,11 +61,15 @@ only the displayed timing/FPS numbers differ.
 git clone <your-repo-url>
 cd <your-repo-folder>
 
-python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
+py -m venv venv
+venv\Scripts\activate        # Windows PowerShell
 
 pip install -r requirements.txt
 ```
+
+On Windows, use `py` if the `python` command opens the Microsoft Store instead.
+The commands below use the virtual environment's Python directly, so activation
+is optional after the environment has been created.
 
 ### Add a sample video
 
@@ -73,21 +81,79 @@ This repo does not bundle a video file. Either:
 2. Point the script at your own file with `--source`, **or**
 3. Use your webcam with `--source 0`.
 
-## Usage
+## Run the web dashboard (recommended)
+
+The web dashboard runs through the Python backend and opens in your browser.
+Run these commands from the project folder:
 
 ```bash
+cd <your-repo-folder>
+venv\Scripts\python.exe -m pip install -r requirements.txt
+
+cd web
+npm install
+npm run build
+cd ..
+
+venv\Scripts\python.exe server.py
+```
+
+Open http://127.0.0.1:8000
+
+Keep the terminal running while using the dashboard. Press `Ctrl+C` in that
+terminal to stop it. The first run may download the YOLO model automatically.
+
+The dashboard can use the webcam, a video uploaded in the browser, or
+`sample_video.mp4` in the project folder. A sample video is not included, so
+add one yourself if you want to use the Sample button.
+
+During UI development, run the API and Vite together:
+
+```bash
+python server.py
+# in another terminal
+cd web && npm install && npm run dev
+```
+
+Then open http://127.0.0.1:5173 (Vite proxies `/api` and `/ws` to the Python server).
+
+## Run the standalone Python demos
+
+Yes. The standalone OpenCV demos are still available and do not require the
+web dashboard. Activate the environment or use its Python executable directly.
+
+### Simulated GPU demo
+
+```bash
+cd <your-repo-folder>
+
 # Uses sample_video.mp4 in the project root by default
-python cpu_vs_gpu_demo.py
+venv\Scripts\python.exe cpu_vs_gpu_demo.py
 
 # Use a specific video file
-python cpu_vs_gpu_demo.py --source path/to/video.mp4
+venv\Scripts\python.exe cpu_vs_gpu_demo.py --source path/to/video.mp4
 
 # Use a webcam (index 0)
-python cpu_vs_gpu_demo.py --source 0
+venv\Scripts\python.exe cpu_vs_gpu_demo.py --source 0
 
 # Optional: adjust confidence threshold, model, or disable video looping
-python cpu_vs_gpu_demo.py --conf 0.4 --model yolov8n.pt --no-loop
+venv\Scripts\python.exe cpu_vs_gpu_demo.py --conf 0.4 --model yolov8n.pt --no-loop
 ```
+
+This version always runs detection on the CPU and displays simulated GPU
+timing, so it works without a compatible GPU.
+
+### Real GPU demo
+
+Install the additional real-GPU requirements first:
+
+```bash
+venv\Scripts\python.exe -m pip install -r requirements_real_gpu.txt
+venv\Scripts\python.exe cpu_vs_real_gpu_demo.py --source 0
+```
+
+This version uses NVIDIA CUDA or Apple MPS when available. On unsupported
+hardware, it falls back to CPU and reports that no compatible GPU was found.
 
 ## Controls
 
@@ -110,11 +176,13 @@ project root, showing:
 
 ```
 .
-├── cpu_vs_gpu_demo.py         # main demo script
+├── server.py                  # FastAPI backend for the web dashboard
+├── web/                       # TypeScript + React + Tailwind UI
+├── cpu_vs_gpu_demo.py         # original OpenCV window demo
 ├── requirements.txt
 ├── README.md
 ├── sample_video.mp4           # add your own (not included)
-└── performance_comparison.png # generated after you quit the demo
+└── performance_comparison.png # generated after you quit the OpenCV demo
 ```
 
 ## Notes for presenters

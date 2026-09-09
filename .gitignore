@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+*.pt
+node_modules/
+web/dist/
+uploads/
+.DS_Store
+*.png
+sample_video.mp4
