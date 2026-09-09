@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-ink: #07080d;
+  --color-panel: #10131a;
+  --color-line: #232833;
+  --color-cpu: #5aaaff;
+  --color-gpu: #3cdc82;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #07080d;
+  color: #e8edf5;
+  font-family: var(--font-sans);
+}
+
+.grid-bg {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(90, 170, 255, 0.12), transparent 55%),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
+}
+
+.glow-cpu {
+  box-shadow: 0 0 0 1px rgba(90, 170, 255, 0.35), 0 24px 80px rgba(90, 170, 255, 0.12);
+}
+
+.glow-gpu {
+  box-shadow: 0 0 0 1px rgba(60, 220, 130, 0.4), 0 24px 80px rgba(60, 220, 130, 0.12);
+}
