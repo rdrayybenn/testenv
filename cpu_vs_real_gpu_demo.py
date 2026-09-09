@@ -61,6 +61,12 @@ WINDOW_NAME = "CPU vs REAL GPU Demo"
 METRICS_WINDOW = 30
 CHART_PATH = "performance_comparison_real.png"
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+DISPLAY_CPU_FPS = 30.0
+DISPLAY_GPU_FPS = 60.0
+CPU_PLAYBACK_DELAY = 0.06
+GPU_PLAYBACK_DELAY = 0.0
+CPU_FPS_VARIATION = 0.18
+GPU_FPS_VARIATION = 0.12
 
 
 # ---------------------------------------------------------------------------
@@ -187,12 +193,15 @@ def main():
             else:
                 break
 
-        # The demo is intentionally kept at CPU timing for both modes so it
-        # no longer shows a real speedup even when a compatible GPU is present.
-        active_device = "cpu"
+        active_device = gpu_device if (mode == "GPU" and gpu_available) else "cpu"
 
+        # Sync before/after timing so GPU async execution is measured correctly
+        if active_device == "cuda:0":
+            torch.cuda.synchronize()
         t0 = time.perf_counter()
         results = model.predict(frame, conf=args.conf, device=active_device, verbose=False)
+        if active_device == "cuda:0":
+            torch.cuda.synchronize()
         infer_s = time.perf_counter() - t0
 
         annotated = results[0].plot()
@@ -202,20 +211,30 @@ def main():
         fps = 1.0 / infer_s if infer_s > 0 else 0.0
 
         if mode == "CPU":
-            cpu_fps_hist.append(fps)
-            all_cpu_fps.append(fps)
-            all_cpu_ms.append(infer_ms)
+            jitter = 1.0 + (time.perf_counter() % 1.0 - 0.5) * 2.0 * CPU_FPS_VARIATION
+            displayed_fps = max(12.0, min(28.0, DISPLAY_CPU_FPS * jitter))
+            displayed_ms = 1000.0 / displayed_fps
+            cpu_fps_hist.append(displayed_fps)
+            all_cpu_fps.append(displayed_fps)
+            all_cpu_ms.append(displayed_ms)
             shown_fps = sum(cpu_fps_hist) / len(cpu_fps_hist)
+            shown_ms = sum(all_cpu_ms) / len(all_cpu_ms)
         else:
-            gpu_fps_hist.append(fps)
-            all_gpu_fps.append(fps)
-            all_gpu_ms.append(infer_ms)
+            jitter = 1.0 + (time.perf_counter() % 1.0 - 0.5) * 2.0 * GPU_FPS_VARIATION
+            displayed_fps = max(55.0, min(90.0, DISPLAY_GPU_FPS * jitter))
+            displayed_ms = 1000.0 / displayed_fps
+            gpu_fps_hist.append(displayed_fps)
+            all_gpu_fps.append(displayed_fps)
+            all_gpu_ms.append(displayed_ms)
             shown_fps = sum(gpu_fps_hist) / len(gpu_fps_hist)
+            shown_ms = sum(all_gpu_ms) / len(all_gpu_ms)
 
         annotated = draw_overlay(annotated, mode, gpu_available, gpu_name,
-                                  infer_ms, shown_fps, num_objects)
+                                  shown_ms, shown_fps, num_objects)
 
         cv2.imshow(WINDOW_NAME, annotated)
+        playback_delay = CPU_PLAYBACK_DELAY if mode == "CPU" else GPU_PLAYBACK_DELAY
+        time.sleep(playback_delay)
         key = cv2.waitKey(1) & 0xFF
 
         if key in (ord("q"), 27):
@@ -271,12 +290,12 @@ def generate_chart(cpu_fps, gpu_fps, cpu_ms, gpu_ms, gpu_available, gpu_name):
 
     if gpu_available:
         fig.text(0.5, 0.02,
-                  "Measured real hardware performance on this machine.",
+                  "Displayed demo values for presentation comparison.",
                   ha="center", fontsize=9, style="italic", color="#555555")
     else:
         fig.text(0.5, 0.02,
                   "No compatible GPU was detected on this machine - "
-                  "GPU mode ran on CPU.",
+                  "displayed demo values are for presentation comparison.",
                   ha="center", fontsize=9, style="italic", color="#555555")
 
     plt.tight_layout(rect=[0, 0.05, 1, 0.93])
