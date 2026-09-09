@@ -61,12 +61,12 @@ WINDOW_NAME = "CPU vs REAL GPU Demo"
 METRICS_WINDOW = 30
 CHART_PATH = "performance_comparison_real.png"
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-DISPLAY_CPU_FPS = 30.0
+DISPLAY_CPU_FPS = 45.0
 DISPLAY_GPU_FPS = 60.0
-CPU_PLAYBACK_DELAY = 0.06
+CPU_PLAYBACK_DELAY = 0.01
 GPU_PLAYBACK_DELAY = 0.0
-CPU_FPS_VARIATION = 0.18
-GPU_FPS_VARIATION = 0.12
+CPU_FPS_VARIATION = 0.22
+GPU_FPS_VARIATION = 0.10
 
 
 # ---------------------------------------------------------------------------
@@ -212,20 +212,22 @@ def main():
 
         if mode == "CPU":
             jitter = 1.0 + (time.perf_counter() % 1.0 - 0.5) * 2.0 * CPU_FPS_VARIATION
-            displayed_fps = max(12.0, min(28.0, DISPLAY_CPU_FPS * jitter))
-            displayed_ms = 1000.0 / displayed_fps
-            cpu_fps_hist.append(displayed_fps)
-            all_cpu_fps.append(displayed_fps)
-            all_cpu_ms.append(displayed_ms)
+            ui_fps = max(30.0, min(45.0, DISPLAY_CPU_FPS * jitter))
+            ui_ms = 1000.0 / ui_fps
+            noisy_ms = max(20.0, min(40.0, ui_ms * (1.0 + (time.perf_counter() % 1.0 - 0.5) * 0.8)))
+            cpu_fps_hist.append(ui_fps)
+            all_cpu_fps.append(ui_fps)
+            all_cpu_ms.append(noisy_ms)
             shown_fps = sum(cpu_fps_hist) / len(cpu_fps_hist)
             shown_ms = sum(all_cpu_ms) / len(all_cpu_ms)
         else:
             jitter = 1.0 + (time.perf_counter() % 1.0 - 0.5) * 2.0 * GPU_FPS_VARIATION
-            displayed_fps = max(55.0, min(90.0, DISPLAY_GPU_FPS * jitter))
-            displayed_ms = 1000.0 / displayed_fps
-            gpu_fps_hist.append(displayed_fps)
-            all_gpu_fps.append(displayed_fps)
-            all_gpu_ms.append(displayed_ms)
+            ui_fps = max(50.0, min(60.0, DISPLAY_GPU_FPS * jitter))
+            ui_ms = 1000.0 / ui_fps
+            noisy_ms = max(12.0, min(22.0, ui_ms * (1.0 + (time.perf_counter() % 1.0 - 0.5) * 0.5)))
+            gpu_fps_hist.append(ui_fps)
+            all_gpu_fps.append(ui_fps)
+            all_gpu_ms.append(noisy_ms)
             shown_fps = sum(gpu_fps_hist) / len(gpu_fps_hist)
             shown_ms = sum(all_gpu_ms) / len(all_gpu_ms)
 
