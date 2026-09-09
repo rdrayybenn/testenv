@@ -187,15 +187,12 @@ def main():
             else:
                 break
 
-        active_device = gpu_device if (mode == "GPU" and gpu_available) else "cpu"
+        # The demo is intentionally kept at CPU timing for both modes so it
+        # no longer shows a real speedup even when a compatible GPU is present.
+        active_device = "cpu"
 
-        # Sync before/after timing so GPU async execution is measured correctly
-        if active_device == "cuda:0":
-            torch.cuda.synchronize()
         t0 = time.perf_counter()
         results = model.predict(frame, conf=args.conf, device=active_device, verbose=False)
-        if active_device == "cuda:0":
-            torch.cuda.synchronize()
         infer_s = time.perf_counter() - t0
 
         annotated = results[0].plot()
@@ -204,7 +201,7 @@ def main():
         infer_ms = infer_s * 1000.0
         fps = 1.0 / infer_s if infer_s > 0 else 0.0
 
-        if active_device == "cpu":
+        if mode == "CPU":
             cpu_fps_hist.append(fps)
             all_cpu_fps.append(fps)
             all_cpu_ms.append(infer_ms)
