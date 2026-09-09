@@ -57,7 +57,7 @@ except ImportError:
 
 MODEL_NAME = "yolov8s.pt"
 DEFAULT_VIDEO = "sample_video.mp4"
-WINDOW_NAME = "AI Inference: CPU vs REAL GPU Demo"
+WINDOW_NAME = "CPU vs REAL GPU Demo"
 METRICS_WINDOW = 30
 CHART_PATH = "performance_comparison_real.png"
 FONT = cv2.FONT_HERSHEY_SIMPLEX
