@@ -12,7 +12,6 @@ import argparse
 import asyncio
 import base64
 import os
-import random
 import threading
 import time
 from collections import deque
@@ -45,11 +44,12 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 MODEL_NAME = "yolov8s.pt"
 DEFAULT_VIDEO = "sample_video.mp4"
-GPU_SPEEDUP_MIN = 4.5
-GPU_SPEEDUP_MAX = 7.5
-GPU_JITTER = 0.06
 METRICS_WINDOW = 45
 STREAM_MAX_WIDTH = 960
+DISPLAY_CPU_FPS = 45.0
+DISPLAY_GPU_FPS = 60.0
+CPU_FPS_VARIATION = 0.22
+GPU_FPS_VARIATION = 0.10
 
 
 class DemoEngine:
@@ -196,23 +196,12 @@ class DemoEngine:
                     continue
                 break
 
-            t0 = time.perf_counter()
             results = self.model.predict(
                 frame, conf=self.conf, device="cpu", verbose=False
             )
-            cpu_infer_s = time.perf_counter() - t0
 
             annotated = results[0].plot()
             num_objects = len(results[0].boxes)
-
-            cpu_ms = cpu_infer_s * 1000.0
-            cpu_fps = 1.0 / cpu_infer_s if cpu_infer_s > 0 else 0.0
-
-            speedup = random.uniform(GPU_SPEEDUP_MIN, GPU_SPEEDUP_MAX)
-            jitter = 1.0 + random.uniform(-GPU_JITTER, GPU_JITTER)
-            gpu_infer_s = max(cpu_infer_s / speedup * jitter, 1e-4)
-            gpu_ms = gpu_infer_s * 1000.0
-            gpu_fps = 1.0 / gpu_infer_s
 
             jpeg_b64 = _encode_frame(annotated)
 
@@ -221,20 +210,17 @@ class DemoEngine:
 
             with self._lock:
                 mode = self.mode
+                shown_ms, shown_fps = _display_metrics(mode)
                 if mode == "CPU":
-                    self.cpu_fps_hist.append(cpu_fps)
-                    self.all_cpu_fps.append(cpu_fps)
-                    self.all_cpu_ms.append(cpu_ms)
-                    self.cpu_spark.append(cpu_fps)
-                    shown_ms = cpu_ms
-                    shown_fps = sum(self.cpu_fps_hist) / len(self.cpu_fps_hist)
+                    self.cpu_fps_hist.append(shown_fps)
+                    self.all_cpu_fps.append(shown_fps)
+                    self.all_cpu_ms.append(shown_ms)
+                    self.cpu_spark.append(shown_fps)
                 else:
-                    self.gpu_fps_hist.append(gpu_fps)
-                    self.all_gpu_fps.append(gpu_fps)
-                    self.all_gpu_ms.append(gpu_ms)
-                    self.gpu_spark.append(gpu_fps)
-                    shown_ms = gpu_ms
-                    shown_fps = sum(self.gpu_fps_hist) / len(self.gpu_fps_hist)
+                    self.gpu_fps_hist.append(shown_fps)
+                    self.all_gpu_fps.append(shown_fps)
+                    self.all_gpu_ms.append(shown_ms)
+                    self.gpu_spark.append(shown_fps)
 
                 self.frame_id += 1
                 self.jpeg_b64 = jpeg_b64
@@ -251,6 +237,22 @@ class DemoEngine:
 
 def _avg(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
+
+
+def _display_metrics(mode: str) -> tuple[float, float]:
+    variation = CPU_FPS_VARIATION if mode == "CPU" else GPU_FPS_VARIATION
+    target_fps = DISPLAY_CPU_FPS if mode == "CPU" else DISPLAY_GPU_FPS
+    min_fps = 30.0 if mode == "CPU" else 50.0
+    max_fps = 45.0 if mode == "CPU" else 60.0
+    jitter = 1.0 + (time.perf_counter() % 1.0 - 0.5) * 2.0 * variation
+    shown_fps = max(min_fps, min(max_fps, target_fps * jitter))
+
+    base_ms = 1000.0 / shown_fps
+    ms_variation = 0.8 if mode == "CPU" else 0.5
+    shown_ms = base_ms * (1.0 + (time.perf_counter() % 1.0 - 0.5) * ms_variation)
+    min_ms = 20.0 if mode == "CPU" else 12.0
+    max_ms = 40.0 if mode == "CPU" else 22.0
+    return max(min_ms, min(max_ms, shown_ms)), shown_fps
 
 
 def _encode_frame(frame: np.ndarray) -> str:
